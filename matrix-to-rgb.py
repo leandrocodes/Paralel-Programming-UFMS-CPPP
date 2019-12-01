@@ -22,10 +22,12 @@ Installation Setup
 # #include <stdlib.h>
 # #include <time.h>
 # #include <unistd.h>
-# #define N 512
+# #define N 4
 # 
 # int main() {
 #   int values[N][N];
+#   int reverseValues[N][N];
+#   int ssa[N][N];
 #   int psa[N][N];
 #   double time = 0.0;
 # 
@@ -58,8 +60,6 @@ Installation Setup
 #   clock_t end = clock();
 #   time += (double)(end - begin) / CLOCKS_PER_SEC;
 # 
-#   printf("\n ------------------------ \n");
-# 
 #   // PRINTA OS PREFIXOS
 #   /*  for (int i = 0; i < N; i++) {
 #      for (int j = 0; j < N; j++) {
@@ -68,7 +68,33 @@ Installation Setup
 #      printf("\n");
 #    } */
 # 
-#   printf("Tempo gasto: %f ms \n", time * 1000);
+#   printf("Prefixos: %f ms \n", time * 1000);
+# 
+#   clock_t start = clock();
+# 
+#   for (int i = N; i > N; i--) {
+#     for (int j = N; j > N; j--) {
+#       reverseValues[i][j] = values[i][j];
+#     }
+#   }
+# 
+#   for (int i = 0; i < N; i++) {
+#     for (int j = 0; j < N; j++) {
+#       psa[i][j] = psa[i - 1][j] + psa[i][j - 1] - psa[i - 1][j - 1] + reverseValues[i][j];
+#     }
+#   }
+# 
+#    for (int i = N; i > N; i--) {
+#     for (int j = N; j > N; j--) {
+#       ssa[i][j] = psa[i][j];
+#     }
+#   }
+#   
+#   clock_t finish = clock();
+#   time += (double)(finish - start) / CLOCKS_PER_SEC;
+# 
+#    printf("Sufixos: %f ms \n", time * 1000);
+# 
 # }
 
 """# Algoritmo Paralelo"""
@@ -79,7 +105,7 @@ Installation Setup
 # #include <thrust/host_vector.h>
 # #include <thrust/scan.h>
 # #include <iostream>
-# #define D 2
+# #define D 4
 # 
 # __host__ static __inline__ int randFill() { return (rand() % 501); }
 # 
@@ -87,7 +113,6 @@ Installation Setup
 #     
 #   thrust::host_vector<int> hostA(D*D);
 #   thrust::host_vector<int> hostB(D*D);
-#   thrust::device_vector<int> deviceC(D*D);
 #   int matrixA[D][D];
 #   int matrixB[D][D];
 #   int index = 0;
@@ -95,36 +120,36 @@ Installation Setup
 #   // INITIALIZE
 #   thrust::generate(hostA.begin(), hostA.end(), randFill);
 #   thrust::generate(hostB.begin(), hostB.end(), randFill);
+# 
+#   thrust::device_vector<int> deviceA = hostA;
+#   thrust::device_vector<int> deviceB = hostB;
+#   thrust::device_vector<int> deviceC(D*D);
 #   
 #   std::cout << "\nHost A: ";
 #   for (int i = 0; i < D*D; i++){
 #     std::cout << hostA[i] << " ";
 #   }
 #   std::cout << "\n";
-# std::cout << "Host B: ";
+#   std::cout << "Host B: ";
+# 
 #   for (int i = 0; i < D*D; i++){
 #     std::cout << hostB[i] << " ";
 #   }
 #   std::cout << "\n" << std::endl;
 # 
-#   int data[D*D];
-# 
-#   for (int i = 0; i < D*D; i++){
-#       data[i] = hostA[i];
-#   }
-# 
+#   
+#   
 #   double time = 0.0;
 #   clock_t begin = clock();
-#   
-#   thrust::inclusive_scan(data, data + D*D, data);
+# 
+#   thrust::inclusive_scan(deviceA.begin(), deviceA.end(), deviceA.begin());
 #   
 #   clock_t end = clock();
 #   time += (double)(end - begin) / CLOCKS_PER_SEC;
 # 
 #   std::cout << "Prefixed Host A: ";
-# 
 #   for (int i = 0; i < D*D; i++){
-#     std::cout << data[i] << " ";
+#     std::cout << deviceA[i] << " ";
 #   }
 # 
 #   printf("\nTempo gasto: %f ms \n", time * 1000);
