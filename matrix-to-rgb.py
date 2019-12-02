@@ -10,7 +10,7 @@ Installation Setup
 """
 
 # Commented out IPython magic to ensure Python compatibility.
-!pip install git+git://github.com/andreinechaev/nvcc4jupyter.git
+#!pip install git+git://github.com/andreinechaev/nvcc4jupyter.git
 # %load_ext nvcc_plugin
 
 """# Algoritmo Sequencial"""
