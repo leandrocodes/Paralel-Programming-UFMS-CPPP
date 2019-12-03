@@ -10,30 +10,30 @@ Installation Setup
 """
 
 # Commented out IPython magic to ensure Python compatibility.
-#!pip install git+git://github.com/andreinechaev/nvcc4jupyter.git
+!pip install git+git://github.com/andreinechaev/nvcc4jupyter.git
 # %load_ext nvcc_plugin
 
 """# Algoritmo Sequencial"""
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%cu
-# 
 # #include <stdio.h>
 # #include <stdlib.h>
 # #include <time.h>
 # #include <unistd.h>
+# #include <iostream>
 # #define N 512
 # template <typename T>
-#   int compare(const void* pa, const void* pb) {
-#     const T& a = *static_cast<const T*>(pa);
-#     const T& b = *static_cast<const T*>(pb);
-#     return (a > b) - (b > a);
-#   }
+# int compare(const void* pa, const void* pb) {
+#   const T& a = *static_cast<const T*>(pa);
+#   const T& b = *static_cast<const T*>(pb);
+#   return (a > b) - (b > a);
+# }
 # 
 # template <typename T>
-#   void qsort(T* pa, std::size_t sz) {
-#     if (pa) std::qsort(pa, sz, sizeof(T), compare<T>);
-#   }
+# void qsort(T* pa, std::size_t sz) {
+#   if (pa) std::qsort(pa, sz, sizeof(T), compare<T>);
+# }
 # 
 # int main() {
 #   int values[N][N];
@@ -61,7 +61,7 @@ Installation Setup
 #   // ------------------------- SOMA DE PREFIXOS -------------------------
 # 
 #   clock_t begin = clock();
-#   
+# 
 #   for (int i = 0; i < N; i++) {
 #     for (int j = 0; j < N; j++) {
 #       psa[i][j] =
@@ -94,16 +94,17 @@ Installation Setup
 # 
 #   for (int i = 0; i < N; i++) {
 #     for (int j = 0; j < N; j++) {
-#       psa[i][j] = psa[i - 1][j] + psa[i][j - 1] - psa[i - 1][j - 1] + reverseValues[i][j];
+#       psa[i][j] = psa[i - 1][j] + psa[i][j - 1] - psa[i - 1][j - 1] +
+#                   reverseValues[i][j];
 #     }
 #   }
 # 
-#    for (int i = N; i > N; i--) {
+#   for (int i = N; i > N; i--) {
 #     for (int j = N; j > N; j--) {
 #       ssa[i][j] = psa[i][j];
 #     }
 #   }
-#   
+# 
 #   clock_t finish = clock();
 #   time += (double)(finish - start) / CLOCKS_PER_SEC;
 # 
@@ -124,37 +125,81 @@ Installation Setup
 #   time += (double)(finishing - starting) / CLOCKS_PER_SEC;
 # 
 #   printf("C = A+B: %f ms \n", time * 1000);
-#   
+# 
 #   // ------------------------- Quicksort -------------------------
 # 
 #   time = 0.0;
 #   clock_t started = clock();
 # 
-#   for( std::size_t i = 0 ; i < N ; ++i ) qsort( arc[i], N ) ;
+#   for (std::size_t i = 0; i < N; ++i) qsort(arc[i], N);
 # 
 #   clock_t finished = clock();
 #   time += (double)(finished - started) / CLOCKS_PER_SEC;
 # 
 #   printf("C Quicksorted: %f ms \n", time * 1000);
 # 
+#   // ------------------------- RGB -------------------------
+# 
+#   time = 0.0;
+#   clock_t s = clock();
+# 
+#   int rgbMatrix[N][N];
+#   int aux = 0;
+# 
+#   for (int i = 0; i < N; i++) {
+#     for (int j = 0; j < N; j++) {
+#       if (arc[i][j] % 2 == 0) {
+#         do {
+#           aux = rand() % 256;
+#         } while (aux % 2 != 0);
+# 
+#         rgbMatrix[i][j] = aux;
+# 
+#       } else {
+#         do {
+#           aux = rand() % 256;
+#         } while (aux % 2 == 0);
+#         rgbMatrix[i][j] = aux;
+#       }
+#     }
+#   }
+# 
+#   clock_t f = clock();
+#   time += (double)(f - s) / CLOCKS_PER_SEC;
+# 
+#   /* for (int i = 0; i < N; i++) {
+#     for (int j = 0; j < N; j++) {
+#       std::cout << rgbMatrix[i][j] << " ";
+#     }
+#   } */
+# 
+#   printf("rgbMatrix: %f ms \n", time * 1000);
 # }
 
 """# Algoritmo Paralelo"""
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%cu
-# #include <thrust/for_each.h>
 # #include <thrust/device_vector.h>
-# #include <thrust/iterator/zip_iterator.h>
+# #include <thrust/for_each.h>
 # #include <thrust/functional.h>
 # #include <thrust/generate.h>
 # #include <thrust/host_vector.h>
+# #include <thrust/iterator/zip_iterator.h>
 # #include <thrust/scan.h>
 # #include <thrust/sort.h>
 # #include <iostream>
 # #define D 512
 # 
-# __host__ static __inline__ int randFill() {return (rand() % 501);}
+#         __host__ static __inline__ int
+#         randFill() {
+#   return (rand() % 501);
+# }
+# 
+# __host__ static __inline__ int
+#         randRGB() {
+#   return (rand() % 256);
+# }
 # 
 # struct arbitrary_functor {
 #   template <typename Tuple>
@@ -166,6 +211,7 @@ Installation Setup
 # int main() {
 #   thrust::host_vector<int> hostA(D * D);
 #   thrust::host_vector<int> hostB(D * D);
+#   thrust::host_vector<int> hostRGB(D * D);
 #   int matrixA[D][D];
 #   int matrixB[D][D];
 #   int index = 0;
@@ -231,8 +277,10 @@ Installation Setup
 #   time = 0.0;
 #   clock_t starting = clock();
 # 
-#   thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(deviceC.begin(), deviceA.begin(), deviceB.begin())),
-#                    thrust::make_zip_iterator(thrust::make_tuple(deviceC.end(), deviceA.end(), deviceB.end())),
+#   thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
+#                        deviceC.begin(), deviceA.begin(), deviceB.begin())),
+#                    thrust::make_zip_iterator(thrust::make_tuple(
+#                        deviceC.end(), deviceA.end(), deviceB.end())),
 #                    arbitrary_functor());
 # 
 #   clock_t finishing = clock();
@@ -251,7 +299,7 @@ Installation Setup
 #   clock_t started = clock();
 # 
 #   thrust::sort(deviceC.begin(), deviceC.end());
-#   
+# 
 #   clock_t finished = clock();
 #   time += (double)(finished - started) / CLOCKS_PER_SEC;
 # 
@@ -259,10 +307,26 @@ Installation Setup
 #   for (int i = 0; i < D * D; i++) {
 #     std::cout << deviceC[i] << " ";
 #   }*/
-#   
+# 
 #   printf("Quicksorted C: %f ms \n", time * 1000);
 # 
-#   // ------------------------- TRANSFORMA EM MATRIZ DENOVO -------------------------
+#   // ------------------------- RGB Array2d -------------------------
+# 
+#   time = 0.0;
+#   clock_t s = clock();
+# 
+#   //thrust::generate(hostRGB.begin(), hostRGB.end(), randRGB);
+#   thrust::device_vector<int> deviceRGB = hostRGB;
+#   
+#   clock_t f = clock();
+#   time += (double)(f - s) / CLOCKS_PER_SEC;
+# 
+#   
+# 
+#   printf("RGB 2dArray: %f ms \n", time * 1000);
+# 
+#   // ------------------------- TRANSFORMA EM MATRIZ DENOVO
+#   // -------------------------
 #   for (int i = 0; i < D; i++) {
 #     for (int j = 0; j < D; j++) {
 #       matrixA[i][j] = hostA[index];
